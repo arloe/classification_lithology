@@ -1,0 +1,89 @@
+{
+    "name": "lith",
+    "n_gpu": 1,
+    "arch": {
+        "type": "ResnetModel",
+        "args": {
+            "input_channel": 1,
+            "output_size": 10,
+            "conv_dropout_ratio": 0.2,
+            "fc_dropout_ratio": 0.3,
+            "channel1": 8,
+            "channel2": 16,
+            "channel3": 32,
+            "layers": [
+                1,
+                1,
+                1,
+                1
+            ],
+            "chunk_depth": 7
+        }
+    },
+    "data_loader": {
+        "type": "DataLoader",
+        "args": {
+            "data_dir": "./data",
+            "input_filename": "train_validation.csv",
+            "in_features": [
+                "DEPTH_MD",
+                "RMED",
+                "RDEP",
+                "RHOB",
+                "GR",
+                "NPHI",
+                "PEF",
+                "DTC",
+                "SP",
+                "ROP",
+                "DRHO"
+            ],
+            "out_feature": "FORCE_2020_LITHOFACIES_LITHOLOGY",
+            "well_name": "WELL",
+            "validation_name": "FOLDS_random",
+            "fold": "cluster0"
+        }
+    },
+    "tensor_loader": {
+        "type": "Tensor",
+        "args": {
+            "batch_size": 512,
+            "shuffle": true,
+            "num_workers": 0,
+            "max_depth": 10000.0,
+            "depth_name": "DEPTH_MD"
+        }
+    },
+    "trainer": {
+        "epochs": 200,
+        "save_dir": "./saved/models",
+        "save_period": 10,
+        "verbosity": 2,
+        "monitor": "min val_loss",
+        "early_stop": 30,
+        "tensorboardX": true,
+        "log_dir": "./saved/logs/",
+        "decay_epoch": 20,
+        "cuda": true
+    },
+    "optimizer": {
+        "type": "Adam",
+        "args": {
+            "lr": 1e-05,
+            "weight_decay": 1e-05,
+            "amsgrad": true
+        }
+    },
+    "metrics": [
+        "top1_metric",
+        "top3_metric"
+    ],
+    "lr_scheduler_onplateau": {
+        "type": "ReduceLROnPlateau",
+        "args": {
+            "factor": 0.2,
+            "patience": 15,
+            "verbose": true
+        }
+    }
+}
