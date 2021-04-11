@@ -2,11 +2,11 @@ import os
 import math
 import json
 import logging
+# import sys
 import datetime
 import torch
 from utils.util import ensure_dir
 from utils.visualization import WriterTensorboardX
-# from utils.visualization import historyhistoryhistory
 
 import numpy as np
 
@@ -17,7 +17,8 @@ class BaseTrainer:
     def __init__(self, model, loss, metrics, optimizer, resume, config, indicator, train_logger=None):
         self.config = config
         self.logger = logging.getLogger(self.__class__.__name__)
-
+        self.logger.propagate = False
+        
         # setup GPU device if available, move model into configured device
         self.device, device_ids = self._prepare_device(config["n_gpu"])
         self.model = model.to(self.device)
@@ -125,11 +126,11 @@ class BaseTrainer:
                     log[key] = value
 
             # print logged informations to the screen
-            if self.train_logger is not None:
-                self.train_logger.add_entry(log)
-                if self.verbosity >= 1:
-                    for key, value in log.items():
-                        self.logger.info('    {:15s}: {}'.format(str(key), value))
+            # if self.train_logger is not None:
+            #     self.train_logger.add_entry(log)
+            #     if self.verbosity >= 1:
+            #         for key, value in log.items():
+            #             self.logger.info('    {:15s}: {}'.format(str(key), value))
 
             # evaluate model performance according to configured metric, save best checkpoint as model_best
             best = False
