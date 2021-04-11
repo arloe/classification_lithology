@@ -28,10 +28,10 @@
         }
     }
     , "tensor_loader": {
-    	  "type": "Tensor"
-    	, "args":{
-    		  "batch_size": 512
-    		, "shuffle": true 
+          "type": "Tensor"
+        , "args":{
+              "batch_size": 512
+            , "shuffle": true 
             , "num_workers": 0
             , "max_depth": 10000.0
             , "depth_name": "DEPTH_MD"
