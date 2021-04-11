@@ -1,13 +1,13 @@
 import numpy as np
 from tqdm import tqdm
 import time
-import os
-import pandas as pd
+# import os
+# import pandas as pd
 
 import torch
 import torch.nn as nn
 from base import BaseTrainer
-from model.loss import MeanPoweredErrorLoss, hub_loss
+# from model.loss import MeanPoweredErrorLoss, hub_loss
 
 class Trainer(BaseTrainer):
     """
@@ -42,6 +42,7 @@ class Trainer(BaseTrainer):
         self.init_lr = self.optimizer.param_groups[0]["lr"]
         self.log_step = 100
         self.scaler = scaler
+
         
         if class_weights != None:
             class_weights = torch.Tensor( class_weights ).to(self.device)
@@ -173,5 +174,5 @@ class Trainer(BaseTrainer):
         self.model.train()
 
         self.logger.info('Epoch: {}\ttr_loss: {:.2f}\tvld_loss: {:.2f}\tvld_bst_loss: {:.2f}\tbest_acc: {:.2f} @ epoch {:d}'.format
-                         ( epoch, train_sup_loss, val_loss, self.best_loss, self.best_acc, self.best_epoch ))
+                          ( epoch, train_sup_loss, val_loss, self.best_loss, self.best_acc, self.best_epoch ))
         return {'val_loss': val_loss}, val_loss, val_acc
