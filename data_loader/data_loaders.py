@@ -1,3 +1,4 @@
+# %reset -f
 import os
 import pandas as pd
 import numpy as np
@@ -6,7 +7,9 @@ from sklearn.preprocessing import RobustScaler
 import torch
 from torch.utils.data import TensorDataset, DataLoader
 
-
+# =============================================================================
+# -- import train data
+# =============================================================================
 def load_data(  data_dir: str, input_filename: str
               , in_features: list, out_feature: str, well_name: str
               , validation_name: str, fold: str ):
@@ -31,6 +34,7 @@ def load_data(  data_dir: str, input_filename: str
     
     # create label variable
     lith_value = df[ out_feature ].drop_duplicates().to_numpy()
+   
     lith_value = sorted(lith_value)
     lith_class = np.linspace(start = 0, stop = len(lith_value) - 1, num = len(lith_value), dtype = "int" )
     label_df = pd.DataFrame( np.c_[lith_value, lith_class], columns = [out_feature, "label"] )
@@ -45,7 +49,9 @@ def load_data(  data_dir: str, input_filename: str
 
     return( train_raw_df, valid_raw_df )
 
-
+# =============================================================================
+# -- data frame to tensor
+# =============================================================================
 def data_to_tensor(  df: pd.DataFrame, batch_size: int, shuffle: bool
                    , num_workers: int, max_depth: float
                    , in_features: list, depth_name: list
@@ -101,7 +107,7 @@ def data_to_tensor(  df: pd.DataFrame, batch_size: int, shuffle: bool
             label.append( label_orig[idx_] )
             idx.append( idx_ )
             begin += 1
-            
+
     data  = np.asarray( data )
     label = np.asarray( label )
     idx   = np.asarray( idx )
@@ -119,3 +125,78 @@ def data_to_tensor(  df: pd.DataFrame, batch_size: int, shuffle: bool
     loader  = DataLoader( dataset, batch_size = batch_size, shuffle = shuffle, **kwargs )
 
     return loader, output_df, scaler
+
+# =============================================================================
+# -- import test data
+# =============================================================================
+def test_data(  data_filepath
+              , in_features, out_feature
+              , depth_name, max_depth, chunk_depth, batch_size, shuffle, scaler
+              , lithology):
+    # assert len(in_features) >= 
+    print("Loading Data....")
+    
+    # read dataset
+    whole_data_df = pd.read_csv(filepath_or_buffer = data_filepath)
+    whole_data_df.columns = map(str.upper, whole_data_df.columns)
+    
+    # type of out_feature
+    features = in_features + [out_feature]
+    data_df = whole_data_df.dropna( subset = in_features).loc[:, features ]
+    
+    # lithology label 
+    label_df = pd.read_csv( lithology )
+    data_df[ out_feature ] = data_df[ out_feature ].astype("int")
+    
+    # target
+    if out_feature in whole_data_df.columns:
+        target = pd.merge(  left = data_df
+                          , right = label_df
+                          , how  = "left"
+                          , on = out_feature )[[out_feature, "label"]]
+        target["label"] = target["label"].astype("int")
+        label_orig = target[ "label" ].values
+    else:
+        label_orig = np.array( [ None ] * data_df.shape[0] ) 
+
+        
+    # Adopt normalization.
+    data_orig  = data_df.loc[:, in_features].values
+    data_orig = scaler.transform( data_orig )
+    if depth_name in data_df.columns:
+        md_col_idx = data_df.columns.get_loc(depth_name)
+        normalized_depth = data_orig[:, md_col_idx] / max_depth  # normalize depth in a different way
+        data_orig[:, md_col_idx] = normalized_depth
+        
+    # data point grouping for training
+    begin, end = 0, data_orig.shape[0]
+    data, label, idx = [], [], []
+    while begin + chunk_depth - 1 < end:  # for every consecutive chunk_depth points
+        idx_ = int(np.floor( np.median( [begin, begin + chunk_depth] ) )) # index of center
+        data.append( data_orig[begin : begin + chunk_depth] )
+        idx.append( idx_ )
+        label.append( label_orig[idx_] )        
+        begin += 1
+    
+    data  = np.asarray( data )
+    label = np.asarray( label )
+    idx   = np.asarray( idx )
+
+    # dataset
+    output_df = data_df.reset_index().loc[ idx, ]
+    
+    # for data, transform N x H x W  to N x 1 x H x W format.
+    data = torch.unsqueeze( torch.FloatTensor( data ) , 1)
+    
+    # for label, transform N x H x 1 to N x H format.    
+    if out_feature in whole_data_df.columns:
+        label = torch.squeeze(torch.LongTensor(label))
+    else:
+        label = torch.tensor( label.astype( None ) )
+            
+    dataset = TensorDataset( data, label )
+    loader  = DataLoader( dataset, batch_size = batch_size, shuffle = shuffle )
+    
+    return loader, output_df
+    
+    
