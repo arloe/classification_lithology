@@ -47,7 +47,7 @@
         "tensorboardX": true,
         "log_dir": "./saved/logs/",
         "decay_epoch": 20,
-        "cuda": true
+        "cuda": false
     },
     "optimizer": {
         "type": "Adam",
